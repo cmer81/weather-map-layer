@@ -10,6 +10,11 @@ export class RegularGrid implements GridInterface {
 	private dx: number;
 	private dy: number;
 
+	// Full-domain width and clip offsets, kept to emit a stable global index.
+	private globalNx: number;
+	private iOffset: number;
+	private jOffset: number;
+
 	private bounds: Bounds;
 	private longitudeWrap: boolean;
 	private center?: { lng: number; lat: number };
@@ -46,6 +51,10 @@ export class RegularGrid implements GridInterface {
 
 		this.nx = ranges[1].end - ranges[1].start;
 		this.ny = ranges[0].end - ranges[0].start;
+
+		this.globalNx = data.nx;
+		this.iOffset = ranges[1].start;
+		this.jOffset = ranges[0].start;
 
 		const lonMin = data.lonMin + this.dx * ranges[1].start;
 		const latMin = data.latMin + this.dy * ranges[0].start;
@@ -170,7 +179,12 @@ export class RegularGrid implements GridInterface {
 			const lat = this.bounds[1] + this.dy * j;
 			for (let i = iStart; i < iEnd; i++) {
 				const lon = this.bounds[0] + this.dx * i;
-				const result = callback({ index: j * this.nx + i, lat, lon });
+				const result = callback({
+					index: j * this.nx + i,
+					globalIndex: (this.jOffset + j) * this.globalNx + (this.iOffset + i),
+					lat,
+					lon
+				});
 				if (result === false) return;
 			}
 		}
