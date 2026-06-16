@@ -25,6 +25,11 @@ export class ProjectionGrid implements GridInterface {
 	private nx: number;
 	private ny: number;
 
+	// Full-domain width and clip offsets, kept to emit a stable global index.
+	private globalNx: number;
+	private iOffset: number;
+	private jOffset: number;
+
 	private bounds?: Bounds;
 	private center?: { lng: number; lat: number };
 
@@ -44,6 +49,10 @@ export class ProjectionGrid implements GridInterface {
 
 		this.nx = ranges[1].end - ranges[1].start;
 		this.ny = ranges[0].end - ranges[0].start;
+
+		this.globalNx = data.nx;
+		this.iOffset = ranges[1].start;
+		this.jOffset = ranges[0].start;
 
 		switch (data.type) {
 			case 'projectedFromBounds': {
@@ -224,7 +233,12 @@ export class ProjectionGrid implements GridInterface {
 				if (bounds) {
 					if (lat < bounds[1] || lat > bounds[3] || lon < bounds[0] || lon > bounds[2]) continue;
 				}
-				const result = callback({ index: j * this.nx + i, lat, lon });
+				const result = callback({
+					index: j * this.nx + i,
+					globalIndex: (this.jOffset + j) * this.globalNx + (this.iOffset + i),
+					lat,
+					lon
+				});
 				if (result === false) return;
 			}
 		}

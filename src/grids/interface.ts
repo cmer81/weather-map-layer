@@ -1,7 +1,14 @@
 import { Bounds, DimensionRange } from '../types';
 
 export interface GridPoint {
-	index: number; // Index into the flat values array
+	index: number; // Index into the flat (possibly clipped/ranged) values array
+	/**
+	 * Stable index into the FULL domain grid (`globalRow * globalNx + globalCol`),
+	 * independent of any clipping range. Use this as the feature id so the same
+	 * geographic node keeps the same id across tiles/zoom (MapLibre's cross-tile
+	 * symbol index can then match it). Falls back to `index` when not provided.
+	 */
+	globalIndex?: number;
 	lat: number;
 	lon: number;
 }

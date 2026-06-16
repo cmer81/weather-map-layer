@@ -1,5 +1,5 @@
 {
-	"name": "@cmer81/weather-map-layer",
+	"name": "@cm3r/weather-map-layer",
 	"type": "module",
 	"main": "dist/index.cjs",
 	"types": "dist/index.d.ts",
