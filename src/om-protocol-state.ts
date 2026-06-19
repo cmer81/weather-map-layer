@@ -29,8 +29,17 @@ const inflightRequests = new WeakMap<OmUrlState, InflightRequest>();
 /** Max states that keep data loaded.
  *
  * This should be as low as possible, but needs to be at least the number of
- * variables that you want to display simultaneously. */
-const MAX_STATES_WITH_DATA = 2;
+ * states a consumer keeps live simultaneously. Beyond the variables shown at
+ * once (main + secondary layer + wind overlay), consumers that pre-decode
+ * neighbouring time steps (look-ahead prefetch for smooth scrubbing) populate
+ * several states per navigation: a window of N neighbours times the displayed
+ * variables. A value of 2 evicts the currently displayed frame as soon as the
+ * 3rd neighbour is decoded — which both defeats the look-ahead cache (decoded
+ * neighbours are evicted before reuse) and makes getValueFromLatLong throw
+ * "State not found" for the visible frame. 24 covers a 4-wide neighbour window
+ * across direction changes with a secondary layer; idle states are still
+ * trimmed by STALE_THRESHOLD_MS on the next fetch. */
+export const MAX_STATES_WITH_DATA = 24;
 /** 1 minute for hard eviction on new data fetches */
 const STALE_THRESHOLD_MS = 1 * 60 * 1000;
 
