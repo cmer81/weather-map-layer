@@ -1,5 +1,5 @@
 import type { WeatherMapLayerFileReader } from '../om-file-reader';
-import { ensureData, getOrCreateState, getRanges } from '../om-protocol-state';
+import { MAX_STATES_WITH_DATA, ensureData, getOrCreateState, getRanges } from '../om-protocol-state';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type {
@@ -331,16 +331,22 @@ describe('getOrCreateState – eviction', () => {
 	it('evicts oldest states when exceeding MAX_STATES_WITH_DATA', () => {
 		const stateByKey = new Map<string, OmUrlState>();
 
-		// MAX_STATES_WITH_DATA = 2. When creating the 4th, the map has 3 entries
-		// which exceeds the limit, so eviction removes the oldest.
-		makeState(stateByKey, 'k1');
-		makeState(stateByKey, 'k2');
-		makeState(stateByKey, 'k3');
-		// Now map has k1, k2, k3 (size=3). Creating k4 triggers eviction with size>2.
-		makeState(stateByKey, 'k4');
+		// Eviction runs *before* insertion, so the map settles at MAX+1 entries:
+		// it only trims once a creation already finds size > MAX. Filling to MAX+1
+		// therefore evicts nothing yet.
+		for (let i = 0; i <= MAX_STATES_WITH_DATA; i++) {
+			makeState(stateByKey, `k${i}`);
+		}
+		expect(stateByKey.size).toBe(MAX_STATES_WITH_DATA + 1);
+		expect(stateByKey.has('k0')).toBe(true);
 
-		expect(stateByKey.has('k1')).toBe(false);
-		expect(stateByKey.has('k4')).toBe(true);
+		// One more: this creation sees size > MAX and evicts the oldest (k0),
+		// while keeping the freshly created one.
+		makeState(stateByKey, 'overflow');
+
+		expect(stateByKey.has('k0')).toBe(false);
+		expect(stateByKey.has('overflow')).toBe(true);
+		expect(stateByKey.size).toBe(MAX_STATES_WITH_DATA + 1);
 	});
 
 	it('reuses existing state when bounds are included', () => {
