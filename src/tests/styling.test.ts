@@ -1,6 +1,5 @@
-import { describe, expect, test } from 'vitest';
-
 import { getColorScale } from '../utils/styling';
+import { describe, expect, test } from 'vitest';
 
 // Variables AROME-France upper-air ajoutées par infoclimat-pipelines#26 : noms
 // hors nomenclature Open-Meteo standard, donc absents de la table de prefixes
