@@ -1,5 +1,42 @@
 # Changelog
 
+## [0.0.20](https://github.com/cmer81/weather-map-layer/compare/v0.0.19...v0.0.20) (2026-06-30)
+
+
+### Features
+
+* **grid-points:** émettre un id global stable (globalIndex) indépendant du clip ([54cba49](https://github.com/cmer81/weather-map-layer/commit/54cba49a3be37c6d2b9cfb37dcaf4ea954c96d56))
+* **grid-points:** émettre un id global stable (globalIndex) indépendant du clip ([0300d3a](https://github.com/cmer81/weather-map-layer/commit/0300d3a002b0a86f9f19223e4f15353c114f3050))
+
+
+### Bug Fixes
+
+* add minifying for cjs and mjs ([34dbf6a](https://github.com/cmer81/weather-map-layer/commit/34dbf6aea393c0e8c0f13055bbad03a19b78df17))
+* annule la fusion accidentelle de wip/upstream-latest dans main ([7b2dce0](https://github.com/cmer81/weather-map-layer/commit/7b2dce0f65d2dbbe3b1bd2fbf2664c4340530d90))
+* annule la fusion accidentelle de wip/upstream-latest dans main ([d45f069](https://github.com/cmer81/weather-map-layer/commit/d45f0696c55b27fffc561bdd74d99afe3fa99a3b))
+* bump @types/node from 25.6.2 to 25.7.0 in the openmeteo group ([#249](https://github.com/cmer81/weather-map-layer/issues/249)) ([d9042e4](https://github.com/cmer81/weather-map-layer/commit/d9042e4f6c2c370a1946ccd683ff8a2f0e6aeb33))
+* bump actions/checkout from 6 to 6.0.2 ([#256](https://github.com/cmer81/weather-map-layer/issues/256)) ([f8aefe8](https://github.com/cmer81/weather-map-layer/commit/f8aefe88c99e23f4f7cb982d55a1c7433bf2747a))
+* bump actions/checkout from 6.0.2 to 6.0.3 ([#262](https://github.com/cmer81/weather-map-layer/issues/262)) ([f9d0502](https://github.com/cmer81/weather-map-layer/commit/f9d0502730ad41223abf95ed141817a31f3cdbbc))
+* bump actions/setup-node from 6 to 6.3.0 ([#238](https://github.com/cmer81/weather-map-layer/issues/238)) ([80a637c](https://github.com/cmer81/weather-map-layer/commit/80a637c134df7af42a62d73f67e2dff64abb7cc5))
+* bump actions/setup-node from 6.3.0 to 6.4.0 ([#240](https://github.com/cmer81/weather-map-layer/issues/240)) ([208c638](https://github.com/cmer81/weather-map-layer/commit/208c638b0c27a51ee6f93c73b5797c25e67b1f3e))
+* bump codecov/codecov-action from 6 to 6.0.1 ([#253](https://github.com/cmer81/weather-map-layer/issues/253)) ([85bd3c0](https://github.com/cmer81/weather-map-layer/commit/85bd3c086374c140ba79262da35ae6196d95671a))
+* bump codecov/codecov-action from 6.0.1 to 7.0.0 ([#263](https://github.com/cmer81/weather-map-layer/issues/263)) ([6f89b97](https://github.com/cmer81/weather-map-layer/commit/6f89b9715ceaee60ef7a32518a6fc7c82b9c1315))
+* bump googleapis/release-please-action from 4 to 4.4.1 ([#241](https://github.com/cmer81/weather-map-layer/issues/241)) ([12eeb65](https://github.com/cmer81/weather-map-layer/commit/12eeb657f8eb6014fac83422d1266813edae14b8))
+* bump googleapis/release-please-action from 4.4.1 to 5.0.0 ([#243](https://github.com/cmer81/weather-map-layer/issues/243)) ([ba120dd](https://github.com/cmer81/weather-map-layer/commit/ba120dded0f4f2f9afc3a9ba3b22831e62403be5))
+* bump the openmeteo group with 3 updates ([#254](https://github.com/cmer81/weather-map-layer/issues/254)) ([a393e6f](https://github.com/cmer81/weather-map-layer/commit/a393e6f60ff614bfa0cf2ed07a2ecb496a2b5607))
+* bump the openmeteo group with 3 updates ([#255](https://github.com/cmer81/weather-map-layer/issues/255)) ([909939c](https://github.com/cmer81/weather-map-layer/commit/909939ccb6fb0e19ecee399c163ab0aa91993af6))
+* bump the openmeteo group with 3 updates ([#257](https://github.com/cmer81/weather-map-layer/issues/257)) ([9f58021](https://github.com/cmer81/weather-map-layer/commit/9f58021b9e09fb3206d14ba23f6f1ffb6dd04d01))
+* correct export paths ([#252](https://github.com/cmer81/weather-map-layer/issues/252)) ([cb8d22d](https://github.com/cmer81/weather-map-layer/commit/cb8d22d92754e7060c04ec20eaa7ddf0f104e57c))
+* correct GEM model strings ([#261](https://github.com/cmer81/weather-map-layer/issues/261)) ([27ee616](https://github.com/cmer81/weather-map-layer/commit/27ee6164f301b7ad58c57cf856c40b26300a4062))
+* export getCachedResolvedClipping ([#235](https://github.com/cmer81/weather-map-layer/issues/235)) ([e65e070](https://github.com/cmer81/weather-map-layer/commit/e65e07029794285a64ec19f5f96e0e0c18a3e539))
+* missing changes and old version in example file ([#259](https://github.com/cmer81/weather-map-layer/issues/259)) ([1f157ef](https://github.com/cmer81/weather-map-layer/commit/1f157ef5a35a6c10660340d6cbe7c22341f68c16))
+* raise MAX_STATES_WITH_DATA to 24 so look-ahead decode survives ([8d25391](https://github.com/cmer81/weather-map-layer/commit/8d25391ead8363be75f82f755a8dc8fd374bb0c3))
+* raise MAX_STATES_WITH_DATA to 24 so look-ahead decode survives ([3996e28](https://github.com/cmer81/weather-map-layer/commit/3996e28ea1239891bcfbcd6811ad2145980a658a))
+* remove unused exports from index ([#245](https://github.com/cmer81/weather-map-layer/issues/245)) ([f9ca176](https://github.com/cmer81/weather-map-layer/commit/f9ca1768e680b7f0236ad8921c8b1f7f42632ccb))
+* **styling:** ajoute des color scales dédiées pour les variables upper-air AROME-France ([d5401ea](https://github.com/cmer81/weather-map-layer/commit/d5401ea84cc85fe2878f248ead44043834f32a45))
+* **styling:** color scales pour les variables upper-air AROME-France ([2ad0b6c](https://github.com/cmer81/weather-map-layer/commit/2ad0b6c6943f170aa60a30474a461454f62e22fa))
+* update to rolldown vite v8 and ts v6 ([#246](https://github.com/cmer81/weather-map-layer/issues/246)) ([46c4f2f](https://github.com/cmer81/weather-map-layer/commit/46c4f2f06f1ede0ec30f2b5b19e38dea47403685))
+
 ## [0.0.19](https://github.com/open-meteo/weather-map-layer/compare/v0.0.18...v0.0.19) (2026-04-13)
 
 
