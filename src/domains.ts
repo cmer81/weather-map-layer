@@ -675,24 +675,8 @@ export const domainOptions: Array<Domain> = [
 
 	// GEM
 	{
-		value: 'cmc_gem_gdps_15km',
+		value: 'cmc_gem_gdps',
 		label: 'GEM Global',
-		grid: {
-			type: 'regular',
-			nx: 2400,
-			ny: 1201,
-			latMin: -90,
-			lonMin: -180,
-			dx: 0.15,
-			dy: 0.15,
-			zoom: 1
-		},
-		time_interval: '3_hourly',
-		model_interval: '12_hourly'
-	},
-	{
-		value: 'cmc_gem_gdps_15km_upper_level',
-		label: 'GEM Global Upper Level',
 		grid: {
 			type: 'regular',
 			nx: 2400,
@@ -747,21 +731,20 @@ export const domainOptions: Array<Domain> = [
 		model_interval: '12_hourly'
 	},
 	{
-		value: 'cmc_gem_rdps_10km',
+		value: 'cmc_gem_rdps',
 		label: 'GEM Regional',
 		grid: {
-			type: 'projectedFromProjectedOrigin',
-			nx: 1140,
-			ny: 1045,
-			projectedLatitudeOrigin: -48.806,
-			projectedLongitudeOrigin: 306.141 - 360,
-			dx: 0.090298,
-			dy: 0.090298,
+			type: 'projectedFromBounds',
+			nx: 935,
+			ny: 824,
+			latitudeBounds: [18.14503, 45.405453],
+			longitudeBounds: [217.10745, 349.8256],
 			zoom: 1,
 			projection: {
-				rotatedLat: -31.7583 * -1,
-				rotatedLon: 267.597 + 180 - 360,
-				name: 'RotatedLatLonProjection'
+				latitude: 90,
+				longitude: 249,
+				radius: 6371229,
+				name: 'StereographicProjection'
 			}
 		},
 		time_interval: 'hourly',

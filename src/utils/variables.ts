@@ -428,3 +428,5 @@ for (const height of heights) {
 	variableOptions.push({ value: `wind_v_component_${height}m`, label: `Wind (${height}m)` });
 	variableOptions.push({ value: `wind_speed_${height}m`, label: `Wind (${height}m)` });
 }
+
+export const drawOnTiles = ['pressure_msl'];

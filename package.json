@@ -6,13 +6,6 @@
 	"author": "Open-Meteo <info@open-meteo.com>",
 	"version": "0.1.1",
 	"module": "dist/index.mjs",
-	"exports": {
-		".": {
-			"types": "./dist/index.d.ts",
-			"import": "./dist/index.mjs",
-			"require": "./dist/index.cjs"
-		}
-	},
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/cmer81/weather-map-layer.git"
@@ -53,7 +46,7 @@
 		"@typescript-eslint/eslint-plugin": "^8.46.2",
 		"@typescript-eslint/parser": "^8.46.2",
 		"@vitest/coverage-v8": "^4.0.15",
-		"concurrently": "^10.0.1",
+		"concurrently": "^9.2.1",
 		"d3-color": "^3.1.0",
 		"d3-interpolate": "^3.0.1",
 		"eslint": "^10.0.1",
@@ -63,18 +56,18 @@
 		"live-server": "^1.2.2",
 		"prettier": "^3.6.2",
 		"tsx": "^4.20.6",
-		"typescript": "^6.0.3",
+		"typescript": "^5.9.3",
 		"typescript-eslint": "^8.58.1",
 		"unplugin-dts": "^1.0.0-beta.6",
-		"vite": "^8.0.12",
+		"vite": "^7.3.2",
 		"vitest": "^4.0.4"
 	},
 	"dependencies": {
 		"@mapbox/tilebelt": "^2.0.3",
-		"@mapbox/vector-tile": "^3.0.0",
+		"@mapbox/vector-tile": "^2.0.4",
 		"@openmeteo/file-reader": "^0.0.15",
 		"maplibre-gl": "^5.20.1",
-		"pbf": "^5.1.0",
+		"pbf": "^4.0.1",
 		"point-in-polygon-hao": "^1.2.4"
 	}
 }
