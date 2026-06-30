@@ -1,5 +1,5 @@
 import { GridInterface } from '../grids';
-import { PbfWriter } from 'pbf';
+import Pbf from 'pbf';
 
 import { type ResolvedClippingOptions, createClippingTester } from './clipping';
 import { VECTOR_TILE_EXTENT } from './constants';
@@ -7,7 +7,7 @@ import { degreesToRadians, rotatePoint, tile2lat, tile2lon } from './math';
 import { command, writeLayer, zigzag } from './pbf';
 
 export const generateArrows = (
-	pbf: PbfWriter,
+	pbf: Pbf,
 	values: Float32Array,
 	directions: Float32Array,
 	grid: GridInterface,

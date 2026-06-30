@@ -1,5 +1,5 @@
 import { GridInterface } from '../grids';
-import { PbfWriter } from 'pbf';
+import Pbf from 'pbf';
 
 import { ResolvedClippingOptions, createClippingTester } from './clipping';
 import { VECTOR_TILE_EXTENT } from './constants';
@@ -21,7 +21,7 @@ const tile2lonUnwrapped = (x: number, z: number): number => {
  * Computes tile geographic bounds that intersects with `clippingBounds` if defined
  */
 export const generateGridPoints = (
-	pbf: PbfWriter,
+	pbf: Pbf,
 	grid: GridInterface,
 	values: Float32Array,
 	directions: Float32Array | undefined,
