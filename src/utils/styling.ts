@@ -111,7 +111,37 @@ export const COLOR_SCALES_WITH_ALIASES: ColorScales = {
 	wave_period: COLOR_SCALES['swell_period'],
 	swell_wave_period: COLOR_SCALES['swell_period'],
 	secondary_swell_wave_period: COLOR_SCALES['swell_period'],
-	tertiary_swell_wave_period: COLOR_SCALES['swell_period']
+	tertiary_swell_wave_period: COLOR_SCALES['swell_period'],
+
+	// Variables upper-air AROME-France (infoclimat-pipelines#26) : noms hors
+	// nomenclature Open-Meteo standard, absents des préfixes reconnus par
+	// `getOptionalColorScale` → sans entrée dédiée ici, retombent sur
+	// `temperature` non recalibrée (rendu vide ou hors plage). Plages
+	// calibrées sur un run réel (2026-06-30T15Z, domaine arome_france).
+	thickness_500_1000hPa: transformScale(
+		COLOR_SCALES['temperature'] as BreakpointColorScale,
+		(b) => 4900 + ((b + 80) / 130) * 1100,
+		'm'
+	),
+	theta_w_850hPa: COLOR_SCALES['temperature'],
+	theta_e_850hPa: transformScale(
+		COLOR_SCALES['temperature'] as BreakpointColorScale,
+		(b) => b + 273.15,
+		'K'
+	),
+	absolute_vorticity_500hPa: transformScale(
+		COLOR_SCALES['temperature'] as BreakpointColorScale,
+		(b) => b * 5e-6 + 1e-4,
+		's⁻¹'
+	),
+	// Altitude de la tropopause dynamique (PV=1.5) : plage (~3700-13800 m) bien
+	// au-dessus des breakpoints `geopotential_height` (calibrés 500hPa,
+	// 4600-6000 m) → réutilise le même dégradé à 11 paliers, rééchelonné.
+	geopotential_height_pv1500: transformScale(
+		COLOR_SCALES['geopotential_height'] as BreakpointColorScale,
+		(b) => 3000 + ((b - 4600) / 1400) * 11500,
+		'm'
+	)
 };
 
 const getOptionalColorScale = (
