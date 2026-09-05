@@ -29,6 +29,13 @@ export class ProjectionGrid implements GridInterface {
 	// minX and minY are the same as origin[0] and origin[1], if the grid is not "reduced" via the ranges
 	private minX: number;
 	private minY: number;
+	// Full-domain width and clip offsets, kept to emit a stable global index
+	// (see GridPoint.globalIndex): the local index is relative to the clipped
+	// sub-grid, so it changes with the requested ranges.
+	private globalNx: number;
+	private iOffset: number;
+	private jOffset: number;
+
 	private nx: number;
 	private ny: number;
 
@@ -48,6 +55,10 @@ export class ProjectionGrid implements GridInterface {
 				{ start: 0, end: data.nx }
 			];
 		}
+
+		this.globalNx = data.nx;
+		this.iOffset = ranges[1].start;
+		this.jOffset = ranges[0].start;
 
 		this.nx = ranges[1].end - ranges[1].start;
 		this.ny = ranges[0].end - ranges[0].start;
@@ -284,7 +295,12 @@ export class ProjectionGrid implements GridInterface {
 				if (bounds) {
 					if (lat < bounds[1] || lat > bounds[3] || lon < bounds[0] || lon > bounds[2]) continue;
 				}
-				const result = callback({ index: j * this.nx + i, lat, lon });
+				const result = callback({
+					index: j * this.nx + i,
+					globalIndex: (this.jOffset + j) * this.globalNx + (this.iOffset + i),
+					lat,
+					lon
+				});
 				if (result === false) return;
 			}
 		}

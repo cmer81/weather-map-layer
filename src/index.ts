@@ -12,7 +12,10 @@ export {
 export { updateCurrentBounds } from './utils/bounds';
 export { createClippingTester } from './utils/clipping';
 export { domainStep, closestModelRun } from './utils/model-runs';
-export { getCachedResolvedClipping } from './utils/parse-request';
+// `defaultResolveRequest` is the default implementation behind the public
+// `OmProtocolSettings.resolveRequest` hook: a consumer overriding that hook
+// needs it to delegate the cases it does not handle itself.
+export { getCachedResolvedClipping, defaultResolveRequest } from './utils/parse-request';
 export { getColor, getColorScale } from './utils/styling';
 
 // Classes
@@ -36,7 +39,9 @@ export { addOpenLayersProtocolSupport } from './adapters/openlayers';
 // Types
 
 export type {
+	BreakpointColorScale,
 	ClippingOptions,
+	ColorScale,
 	Data,
 	Domain,
 	DomainMetaDataJson,
@@ -47,6 +52,7 @@ export type {
 	InterpolationMethod,
 	OmProtocolSettings,
 	OmUrlState,
+	RGBA,
 	RenderableColorScale
 } from './types';
 

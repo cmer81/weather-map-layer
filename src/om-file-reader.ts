@@ -224,6 +224,27 @@ export class WeatherMapLayerFileReader {
 	}
 
 	/**
+	 * Read a variable exactly as stored, bypassing the derivation rules.
+	 *
+	 * `readVariable` turns `wind_u_component_*` / `wind_v_component_*` into
+	 * speed + direction. Consumers that need the raw components — a vertical
+	 * column feeding a hodograph or shear vectors, say — cannot recover them from
+	 * that pair: the direction has to be spatially interpolated first, and
+	 * interpolating an angle across the 0°/360° seam is wrong. This reads the
+	 * scalar field itself, which interpolates correctly.
+	 */
+	async readRawVariable(
+		omUrl: string,
+		variable: string,
+		ranges: DimensionRange[] | null = null,
+		signal?: AbortSignal
+	): Promise<Data> {
+		return this.withReader(omUrl, (reader) =>
+			this.readSimpleVariable(reader, variable, ranges, signal)
+		);
+	}
+
+	/**
 	 * Prefetch data for a specific variable and range of the given .om file into
 	 * the local cache. This is useful for warming up the cache for anticipated
 	 * map movements or timestep changes.

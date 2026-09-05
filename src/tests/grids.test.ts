@@ -269,10 +269,10 @@ describe('RegularGrid', () => {
 			});
 
 			expect(points).toHaveLength(30);
-			expect(points[0]).toEqual({ index: 0, lat: 56, lon: 10 });
-			expect(points[9]).toEqual({ index: 9, lat: 56, lon: 19 });
-			expect(points[10]).toEqual({ index: 10, lat: 54, lon: 10 });
-			expect(points[29]).toEqual({ index: 29, lat: 52, lon: 19 });
+			expect(points[0]).toEqual({ index: 0, globalIndex: 0, lat: 56, lon: 10 });
+			expect(points[9]).toEqual({ index: 9, globalIndex: 9, lat: 56, lon: 19 });
+			expect(points[10]).toEqual({ index: 10, globalIndex: 10, lat: 54, lon: 10 });
+			expect(points[29]).toEqual({ index: 29, globalIndex: 29, lat: 52, lon: 19 });
 		});
 
 		test('forEachPoint uses direction-normalized bounds with negative dy', () => {
@@ -286,12 +286,12 @@ describe('RegularGrid', () => {
 			);
 
 			expect(points).toEqual([
-				{ index: 11, lat: 54, lon: 11 },
-				{ index: 12, lat: 54, lon: 12 },
-				{ index: 13, lat: 54, lon: 13 },
-				{ index: 21, lat: 52, lon: 11 },
-				{ index: 22, lat: 52, lon: 12 },
-				{ index: 23, lat: 52, lon: 13 }
+				{ index: 11, globalIndex: 11, lat: 54, lon: 11 },
+				{ index: 12, globalIndex: 12, lat: 54, lon: 12 },
+				{ index: 13, globalIndex: 13, lat: 54, lon: 13 },
+				{ index: 21, globalIndex: 21, lat: 52, lon: 11 },
+				{ index: 22, globalIndex: 22, lat: 52, lon: 12 },
+				{ index: 23, globalIndex: 23, lat: 52, lon: 13 }
 			]);
 		});
 
@@ -541,5 +541,73 @@ describe('ProjectionGrid', () => {
 		expect(ranges[1].end).toBeLessThanOrEqual(projectedGridData.nx);
 		expect(ranges[0].start).toBeLessThanOrEqual(ranges[0].end);
 		expect(ranges[1].start).toBeLessThanOrEqual(ranges[1].end);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// globalIndex — stable feature id across clipped sub-grids
+// ---------------------------------------------------------------------------
+
+describe('forEachPoint globalIndex', () => {
+	test('RegularGrid: globalIndex identifies the same node whatever the ranges', () => {
+		const full = new RegularGrid(gridData);
+		const byCoord = new Map<string, number>();
+		full.forEachPoint(({ globalIndex, lat, lon }) => {
+			byCoord.set(`${lat},${lon}`, globalIndex as number);
+		});
+
+		// Same domain, but read through a clipped range: `index` is re-based on the
+		// sub-grid width while `globalIndex` must still address the full grid.
+		const ranges: DimensionRange[] = [
+			{ start: 1, end: 3 },
+			{ start: 4, end: 8 }
+		];
+		const clipped = new RegularGrid(gridData, ranges);
+
+		let checked = 0;
+		clipped.forEachPoint(({ index, globalIndex, lat, lon }) => {
+			expect(globalIndex).toBe(byCoord.get(`${lat},${lon}`));
+			// The local index really is different — otherwise the test proves nothing.
+			expect(globalIndex).not.toBe(index);
+			checked++;
+		});
+		expect(checked).toBe(8);
+	});
+
+	test('RegularGrid: globalIndex decodes to the full-grid row/column', () => {
+		const ranges: DimensionRange[] = [
+			{ start: 1, end: 3 },
+			{ start: 4, end: 8 }
+		];
+		const clipped = new RegularGrid(gridData, ranges);
+		const first = [] as number[];
+		clipped.forEachPoint(({ globalIndex }) => {
+			first.push(globalIndex as number);
+			return false;
+		});
+		// First visited node is full-grid (row 1, col 4) → 1 * nx + 4
+		expect(first[0]).toBe(1 * gridData.nx + 4);
+	});
+
+	test('ProjectionGrid: globalIndex identifies the same node whatever the ranges', () => {
+		const full = new ProjectionGrid(projectedGridData);
+		const byCoord = new Map<string, number>();
+		full.forEachPoint(({ globalIndex, lat, lon }) => {
+			byCoord.set(`${lat},${lon}`, globalIndex as number);
+		});
+
+		const ranges: DimensionRange[] = [
+			{ start: 2, end: 5 },
+			{ start: 3, end: 7 }
+		];
+		const clipped = new ProjectionGrid(projectedGridData, ranges);
+
+		let checked = 0;
+		clipped.forEachPoint(({ index, globalIndex, lat, lon }) => {
+			expect(globalIndex).toBe(byCoord.get(`${lat},${lon}`));
+			expect(globalIndex).not.toBe(index);
+			checked++;
+		});
+		expect(checked).toBe(12);
 	});
 });
