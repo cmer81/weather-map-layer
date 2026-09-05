@@ -97,7 +97,7 @@ export const generateGridPoints = (
 	};
 
 	sources.forEach((source, sourceIndex) => {
-		source.grid.forEachPoint(({ index, lat, lon }) => {
+		source.grid.forEachPoint(({ index, globalIndex, lat, lon }) => {
 			const worldPx = Math.floor(lon2tile(lon, z) * extent);
 			const worldPy = Math.floor(lat2tile(lat, z) * extent);
 
@@ -125,7 +125,10 @@ export const generateGridPoints = (
 			}
 
 			features.push({
-				id: sourceIndex * SOURCE_ID_STRIDE + index,
+				// Stable global id (falls back to the local index for grids that don't
+				// provide one) so MapLibre's cross-tile symbol index matches the same node
+				// across tiles/zoom — see GridPoint.globalIndex.
+				id: sourceIndex * SOURCE_ID_STRIDE + (globalIndex ?? index),
 				type: 1, // Point
 				properties,
 				geom: [command(1, 1), zigzag(px), zigzag(py)]

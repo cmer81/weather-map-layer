@@ -11,6 +11,13 @@ import { Bounds, DimensionRange, InterpolationMethod, RegularGridData } from '..
 
 // Regular grid implementation
 export class RegularGrid implements GridInterface {
+	// Full-domain width and clip offsets, kept to emit a stable global index
+	// (see GridPoint.globalIndex): the local index is relative to the clipped
+	// sub-grid, so it changes with the requested ranges.
+	private globalNx: number;
+	private iOffset: number;
+	private jOffset: number;
+
 	private nx: number;
 	private ny: number;
 	private dx: number;
@@ -71,6 +78,10 @@ export class RegularGrid implements GridInterface {
 				throw new Error('Invalid x range');
 			}
 		}
+
+		this.globalNx = data.nx;
+		this.iOffset = ranges[1].start;
+		this.jOffset = ranges[0].start;
 
 		this.nx = ranges[1].end - ranges[1].start;
 		this.ny = ranges[0].end - ranges[0].start;
@@ -300,7 +311,12 @@ export class RegularGrid implements GridInterface {
 			const lat = this.originLat + this.dy * j;
 			for (let i = iStart; i < iEnd; i++) {
 				const lon = this.originLon + this.dx * i;
-				const result = callback({ index: j * this.nx + i, lat, lon });
+				const result = callback({
+					index: j * this.nx + i,
+					globalIndex: (this.jOffset + j) * this.globalNx + (this.iOffset + i),
+					lat,
+					lon
+				});
 				if (result === false) return;
 			}
 		}

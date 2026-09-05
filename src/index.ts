@@ -22,7 +22,10 @@ export {
 	variableSupportsBarbs,
 	variableUsesTimeStep
 } from './derivation-rules';
-export { getCachedResolvedClipping } from './utils/parse-request';
+// `defaultResolveRequest` is the default implementation behind the public
+// `OmProtocolSettings.resolveRequest` hook: a consumer overriding that hook
+// needs it to delegate the cases it does not handle itself.
+export { getCachedResolvedClipping, defaultResolveRequest } from './utils/parse-request';
 export { getColor, getColorScale } from './utils/styling';
 
 // Classes
@@ -65,7 +68,9 @@ export type { ActiveSeamlessLayer, SeamlessLayerFilter } from './domain-helpers'
 export type {
 	ArrowStyle,
 	Bounds,
+	BreakpointColorScale,
 	ClippingOptions,
+	ColorScale,
 	Data,
 	Domain,
 	DomainMetaDataJson,
@@ -76,6 +81,7 @@ export type {
 	InterpolationMethod,
 	OmProtocolSettings,
 	OmUrlState,
+	RGBA,
 	RenderableColorScale,
 	SeamlessDomain,
 	SeamlessLayer

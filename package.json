@@ -1,5 +1,5 @@
 {
-	"name": "@openmeteo/weather-map-layer",
+	"name": "@cm3r/weather-map-layer",
 	"type": "module",
 	"types": "dist/index.d.ts",
 	"author": "Open-Meteo <info@open-meteo.com>",
@@ -13,7 +13,10 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/open-meteo/weather-map-layer.git"
+		"url": "git+https://github.com/cmer81/weather-map-layer.git"
+	},
+	"publishConfig": {
+		"access": "public"
 	},
 	"description": "Weather Map Layer for MapLibre/Mapbox GL JS powered by Open-Meteo OMfiles",
 	"keywords": [
