@@ -25,22 +25,106 @@ function findLastIndexLE(arr: number[], value: number): number {
 	return res;
 }
 
+const lerpColor = (
+	a: [number, number, number, number],
+	b: [number, number, number, number],
+	t: number,
+	out: [number, number, number, number] = [0, 0, 0, 0]
+): [number, number, number, number] => {
+	out[0] = a[0] + (b[0] - a[0]) * t;
+	out[1] = a[1] + (b[1] - a[1]) * t;
+	out[2] = a[2] + (b[2] - a[2]) * t;
+	out[3] = a[3] + (b[3] - a[3]) * t;
+	return out;
+};
+
 export const getColor = (
 	colorScale: RenderableColorScale,
-	px: number
+	px: number,
+	blend: boolean = false,
+	// Optional reusable buffer for the blended result. Hot paths (the raster
+	// worker's per-pixel loop) pass one to avoid allocating an array per pixel.
+	// The non-blend path returns the scale's own colour, so `out` is ignored there.
+	out?: [number, number, number, number]
 ): [number, number, number, number] => {
 	switch (colorScale.type) {
 		case 'rgba': {
-			const deltaPerIndex = (colorScale.max - colorScale.min) / colorScale.colors.length;
-			const index = Math.min(
-				colorScale.colors.length - 1,
-				Math.max(0, Math.floor((px - colorScale.min) / deltaPerIndex))
-			);
-			return colorScale.colors[index];
+			const colors = colorScale.colors;
+			const deltaPerIndex = (colorScale.max - colorScale.min) / colors.length;
+			const pos = (px - colorScale.min) / deltaPerIndex;
+			const index = Math.min(colors.length - 1, Math.max(0, Math.floor(pos)));
+			if (!blend) return colors[index];
+			const next = Math.min(colors.length - 1, index + 1);
+			const t = Math.min(1, Math.max(0, pos - index));
+			return lerpColor(colors[index], colors[next], t, out);
 		}
 		case 'breakpoint': {
-			const index = Math.max(0, findLastIndexLE(colorScale.breakpoints, px));
-			return colorScale.colors[index];
+			const breakpoints = colorScale.breakpoints;
+			const colors = colorScale.colors;
+			const index = Math.max(0, findLastIndexLE(breakpoints, px));
+			if (!blend) return colors[index];
+			const next = Math.min(colors.length - 1, index + 1);
+			const lo = breakpoints[index];
+			const hi = breakpoints[next];
+			const t = hi > lo ? Math.min(1, Math.max(0, (px - lo) / (hi - lo))) : 0;
+			return lerpColor(colors[index], colors[next], t, out);
+		}
+		default: {
+			// This ensures exhaustiveness checking
+			const _exhaustive: never = colorScale;
+			throw new Error(`Unknown color scale: ${_exhaustive}`);
+		}
+	}
+};
+
+// A colour lookup specialised to one scale, with the per-tile invariants
+// (rgba index scale, breakpoint/colour arrays) resolved once. The raster worker
+// builds this once per tile and calls it per pixel, avoiding the `switch` and the
+// `(max-min)/length` division that getColor repeats on every pixel. `out` is the
+// reusable blend buffer (ignored on the non-blend path, which returns the scale's
+// own colour).
+export type ColorSampler = (
+	px: number,
+	out: [number, number, number, number]
+) => [number, number, number, number];
+
+export const makeColorSampler = (
+	colorScale: RenderableColorScale,
+	blend: boolean = false
+): ColorSampler => {
+	switch (colorScale.type) {
+		case 'rgba': {
+			const colors = colorScale.colors;
+			const last = colors.length - 1;
+			const min = colorScale.min;
+			// index = (px - min) / deltaPerIndex == (px - min) * (length / (max - min))
+			const scale = colors.length / (colorScale.max - colorScale.min);
+			if (!blend) {
+				return (px) => colors[Math.min(last, Math.max(0, Math.floor((px - min) * scale)))];
+			}
+			return (px, out) => {
+				const pos = (px - min) * scale;
+				const index = Math.min(last, Math.max(0, Math.floor(pos)));
+				const next = Math.min(last, index + 1);
+				const t = Math.min(1, Math.max(0, pos - index));
+				return lerpColor(colors[index], colors[next], t, out);
+			};
+		}
+		case 'breakpoint': {
+			const breakpoints = colorScale.breakpoints;
+			const colors = colorScale.colors;
+			const last = colors.length - 1;
+			if (!blend) {
+				return (px) => colors[Math.max(0, findLastIndexLE(breakpoints, px))];
+			}
+			return (px, out) => {
+				const index = Math.max(0, findLastIndexLE(breakpoints, px));
+				const next = Math.min(last, index + 1);
+				const lo = breakpoints[index];
+				const hi = breakpoints[next];
+				const t = hi > lo ? Math.min(1, Math.max(0, (px - lo) / (hi - lo))) : 0;
+				return lerpColor(colors[index], colors[next], t, out);
+			};
 		}
 		default: {
 			// This ensures exhaustiveness checking
@@ -64,9 +148,14 @@ const transformScale = (
 	};
 };
 
+const freezingLevelHeightScale = transformScale(
+	COLOR_SCALES['temperature'] as BreakpointColorScale,
+	(b) => (b + 15) * 80,
+	'm'
+);
+
 export const COLOR_SCALES_WITH_ALIASES: ColorScales = {
 	...COLOR_SCALES,
-	albedo: COLOR_SCALES['cloud_cover'],
 	boundary_layer_height: transformScale(
 		COLOR_SCALES['convective_cloud_top'] as BreakpointColorScale,
 		(b) => b / 2
@@ -77,11 +166,7 @@ export const COLOR_SCALES_WITH_ALIASES: ColorScales = {
 	dew_point: COLOR_SCALES['temperature'],
 	diffuse_radiation: COLOR_SCALES['shortwave'],
 	direct_radiation: COLOR_SCALES['shortwave'],
-	freezing_level_height: transformScale(
-		COLOR_SCALES['temperature'] as BreakpointColorScale,
-		(b) => (b + 20) * 80,
-		'm'
-	),
+	freezing_level_height: freezingLevelHeightScale,
 	latent_heat_flux: {
 		...COLOR_SCALES['temperature'],
 		unit: 'W/m²'
@@ -97,6 +182,7 @@ export const COLOR_SCALES_WITH_ALIASES: ColorScales = {
 		COLOR_SCALES['precipitation'] as BreakpointColorScale,
 		(b) => b * 200
 	),
+	snowfall_height: freezingLevelHeightScale,
 	snowfall_water_equivalent: COLOR_SCALES['precipitation'],
 	visibility: {
 		...COLOR_SCALES['geopotential_height'],
@@ -111,37 +197,7 @@ export const COLOR_SCALES_WITH_ALIASES: ColorScales = {
 	wave_period: COLOR_SCALES['swell_period'],
 	swell_wave_period: COLOR_SCALES['swell_period'],
 	secondary_swell_wave_period: COLOR_SCALES['swell_period'],
-	tertiary_swell_wave_period: COLOR_SCALES['swell_period'],
-
-	// Variables upper-air AROME-France (infoclimat-pipelines#26) : noms hors
-	// nomenclature Open-Meteo standard, absents des préfixes reconnus par
-	// `getOptionalColorScale` → sans entrée dédiée ici, retombent sur
-	// `temperature` non recalibrée (rendu vide ou hors plage). Plages
-	// calibrées sur un run réel (2026-06-30T15Z, domaine arome_france).
-	thickness_500_1000hPa: transformScale(
-		COLOR_SCALES['temperature'] as BreakpointColorScale,
-		(b) => 4900 + ((b + 80) / 130) * 1100,
-		'm'
-	),
-	theta_w_850hPa: COLOR_SCALES['temperature'],
-	theta_e_850hPa: transformScale(
-		COLOR_SCALES['temperature'] as BreakpointColorScale,
-		(b) => b + 273.15,
-		'K'
-	),
-	absolute_vorticity_500hPa: transformScale(
-		COLOR_SCALES['temperature'] as BreakpointColorScale,
-		(b) => b * 5e-6 + 1e-4,
-		's⁻¹'
-	),
-	// Altitude de la tropopause dynamique (PV=1.5) : plage (~3700-13800 m) bien
-	// au-dessus des breakpoints `geopotential_height` (calibrés 500hPa,
-	// 4600-6000 m) → réutilise le même dégradé à 11 paliers, rééchelonné.
-	geopotential_height_pv1500: transformScale(
-		COLOR_SCALES['geopotential_height'] as BreakpointColorScale,
-		(b) => 3000 + ((b - 4600) / 1400) * 11500,
-		'm'
-	)
+	tertiary_swell_wave_period: COLOR_SCALES['swell_period']
 };
 
 const getOptionalColorScale = (
@@ -163,7 +219,8 @@ const getOptionalColorScale = (
 			return scale;
 		}
 
-		if (scale.type !== 'breakpoint') {
+		// Custom colorScales sources may not define a geopotential scale at all
+		if (!scale || scale.type !== 'breakpoint') {
 			return scale;
 		}
 

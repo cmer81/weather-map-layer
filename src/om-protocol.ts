@@ -16,12 +16,12 @@ import { WorkerPool } from './worker-pool';
 import type {
 	Data,
 	DataIdentityOptions,
-	DimensionRange,
 	OmProtocolSettings,
+	OmUrlState,
 	ParsedRequest,
-	RenderOptions,
 	TileJSON,
 	TilePromise,
+	TileResponse,
 	TileResult
 } from './types';
 
@@ -40,20 +40,16 @@ export const defaultOmProtocolSettings: OmProtocolSettings = {
 	postReadCallback: undefined
 };
 
-const makeAbortResult = (): GetResourceResponse<null> => {
-	return { data: null };
-};
-
 export const omProtocol = async (
 	params: RequestParameters,
 	abortController: AbortController,
 	settings = defaultOmProtocolSettings
-): Promise<GetResourceResponse<TileJSON | ImageBitmap | ArrayBuffer | null>> => {
+): Promise<GetResourceResponse<TileJSON | TileResponse | null>> => {
 	const signal = abortController.signal;
 
 	// Check if already aborted
 	if (signal.aborted) {
-		return makeAbortResult();
+		return { data: null };
 	}
 
 	const instance = getProtocolInstance(settings);
@@ -70,17 +66,24 @@ export const omProtocol = async (
 
 	// Check abort status before proceeding
 	if (signal.aborted) {
-		return makeAbortResult();
+		return { data: null };
 	}
 
-	const data = await ensureData(state, instance.omFileReader, settings.postReadCallback, signal);
-
-	// Handle TileJSON request
+	// Handle TileJSON request. The bounds only depend on the grid definition, so
+	// respond immediately instead of blocking MapLibre's source setup on the full
+	// data download. The data load is still kicked off right away (fire and
+	// forget) so it runs while MapLibre processes the TileJSON — the subsequent
+	// tile requests then await the same shared promise via state.dataPromise.
 	if (params.type == 'json') {
+		ensureData(state, instance.omFileReader, settings.postReadCallback).catch(() => {
+			// Errors surface on the awaited tile requests; ignore here.
+		});
 		return {
 			data: await getTilejson(params.url, request.dataOptions, request.clippingOptions)
 		};
 	}
+
+	const data = await ensureData(state, instance.omFileReader, settings.postReadCallback, signal);
 
 	// Handle tile request
 	if (params.type !== 'image' && params.type !== 'arrayBuffer') {
@@ -91,19 +94,12 @@ export const omProtocol = async (
 		throw new Error(`Tile coordinates required for ${params.type} request`);
 	}
 
-	const { data: tileData, cancelled } = await requestTile(
-		url,
-		request,
-		data,
-		state.ranges,
-		params.type,
-		signal
-	);
+	const tileResult = await requestTile(url, request, data, state, params.type, signal);
 
-	if (cancelled) {
-		return makeAbortResult();
+	if (tileResult.cancelled || !tileResult.data) {
+		return { data: null };
 	} else {
-		return { data: tileData! };
+		return { data: tileResult.data };
 	}
 };
 
@@ -126,7 +122,7 @@ const requestTile = async (
 	url: string,
 	request: ParsedRequest,
 	data: Data,
-	ranges: DimensionRange[],
+	state: OmUrlState,
 	type: 'image' | 'arrayBuffer',
 	signal?: AbortSignal
 ): TilePromise => {
@@ -144,7 +140,7 @@ const requestTile = async (
 	// early return if the worker will not return a tile
 	if (tileType === 'getArrayBuffer') {
 		if (
-			!drawsArrows(request.renderOptions, data) &&
+			!(request.renderOptions.drawArrows && data.directions !== undefined) &&
 			!request.renderOptions.drawContours &&
 			!request.renderOptions.drawGrid
 		) {
@@ -157,7 +153,7 @@ const requestTile = async (
 		key,
 		tileIndex: request.tileIndex,
 		data,
-		ranges,
+		ranges: state.ranges,
 		dataOptions: request.dataOptions,
 		renderOptions: request.renderOptions,
 		clippingOptions: request.clippingOptions,
@@ -187,8 +183,4 @@ const getTilejson = async (
 		maxzoom: 12,
 		bounds: bounds
 	};
-};
-
-const drawsArrows = (renderOptions: RenderOptions, data: Data): boolean => {
-	return renderOptions.drawArrows && data.directions !== undefined;
 };

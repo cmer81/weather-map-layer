@@ -1,11 +1,18 @@
 import { GridInterface, GridPoint } from './interface';
-import { interpolateLinear } from './interpolations';
+import {
+	interpolateCubic,
+	interpolateLinear,
+	interpolateLinearAngle,
+	interpolateMonotone,
+	interpolateNearest
+} from './interpolations';
 import { Projection, createProjection } from './projections';
 
 import {
 	Bounds,
 	Center,
 	DimensionRange,
+	InterpolationMethod,
 	ProjectionGridFromBounds,
 	ProjectionGridFromGeographicOrigin,
 	ProjectionGridFromProjectedOrigin
@@ -22,13 +29,15 @@ export class ProjectionGrid implements GridInterface {
 	// minX and minY are the same as origin[0] and origin[1], if the grid is not "reduced" via the ranges
 	private minX: number;
 	private minY: number;
-	private nx: number;
-	private ny: number;
-
-	// Full-domain width and clip offsets, kept to emit a stable global index.
+	// Full-domain width and clip offsets, kept to emit a stable global index
+	// (see GridPoint.globalIndex): the local index is relative to the clipped
+	// sub-grid, so it changes with the requested ranges.
 	private globalNx: number;
 	private iOffset: number;
 	private jOffset: number;
+
+	private nx: number;
+	private ny: number;
 
 	private bounds?: Bounds;
 	private center?: { lng: number; lat: number };
@@ -47,18 +56,18 @@ export class ProjectionGrid implements GridInterface {
 			];
 		}
 
-		this.nx = ranges[1].end - ranges[1].start;
-		this.ny = ranges[0].end - ranges[0].start;
-
 		this.globalNx = data.nx;
 		this.iOffset = ranges[1].start;
 		this.jOffset = ranges[0].start;
 
+		this.nx = ranges[1].end - ranges[1].start;
+		this.ny = ranges[0].end - ranges[0].start;
+
 		switch (data.type) {
 			case 'projectedFromBounds': {
 				this.projection = createProjection(data.projection);
-				const sw = this.projection.forward(data.latitudeBounds[0], data.longitudeBounds[0]);
-				const ne = this.projection.forward(data.latitudeBounds[1], data.longitudeBounds[1]);
+				const sw = this.projection.forward(data.latitude[0], data.longitude[0]);
+				const ne = this.projection.forward(data.latitude[1], data.longitude[1]);
 				this.origin = sw;
 				this.dx = (ne[0] - sw[0]) / (data.nx - 1);
 				this.dy = (ne[1] - sw[1]) / (data.ny - 1);
@@ -73,7 +82,7 @@ export class ProjectionGrid implements GridInterface {
 			}
 			case 'projectedFromProjectedOrigin': {
 				this.projection = createProjection(data.projection);
-				this.origin = [data.projectedLongitudeOrigin, data.projectedLatitudeOrigin];
+				this.origin = [data.longitudeProjectionOrigin, data.latitudeProjectionOrigin];
 				this.dx = data.dx;
 				this.dy = data.dy;
 				break;
@@ -90,8 +99,61 @@ export class ProjectionGrid implements GridInterface {
 	}
 
 	getLinearInterpolatedValue(values: Float32Array, lat: number, lon: number): number {
+		return this.getInterpolatedValue(values, lat, lon, 'linear');
+	}
+
+	getLinearInterpolatedDirection(values: Float32Array, lat: number, lon: number): number {
 		const idx = this.findPointInterpolated(lat, lon);
-		return interpolateLinear(values, idx.x, idx.y, idx.xFraction, idx.yFraction, this.nx);
+		return interpolateLinearAngle(values, idx.x, idx.y, idx.xFraction, idx.yFraction, this.nx);
+	}
+
+	getInterpolatedValue(
+		values: Float32Array,
+		lat: number,
+		lon: number,
+		method: InterpolationMethod
+	): number {
+		const idx = this.findPointInterpolated(lat, lon);
+		switch (method) {
+			// 'nearest' returns the value of the closest grid node.
+			case 'nearest':
+				return interpolateNearest(
+					values,
+					idx.x,
+					idx.y,
+					idx.xFraction,
+					idx.yFraction,
+					this.nx,
+					this.ny
+				);
+			case 'cubic':
+				return interpolateCubic(
+					values,
+					idx.x,
+					idx.y,
+					idx.xFraction,
+					idx.yFraction,
+					this.nx,
+					this.ny
+				);
+			case 'monotone':
+				return interpolateMonotone(
+					values,
+					idx.x,
+					idx.y,
+					idx.xFraction,
+					idx.yFraction,
+					this.nx,
+					this.ny
+				);
+			case 'linear':
+				return interpolateLinear(values, idx.x, idx.y, idx.xFraction, idx.yFraction, this.nx);
+			default: {
+				// Exhaustiveness check; also throws at runtime for untyped callers.
+				const _exhaustive: never = method;
+				throw new Error(`Unknown interpolation method: ${_exhaustive}`);
+			}
+		}
 	}
 
 	getBounds(): Bounds {

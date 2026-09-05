@@ -1,4 +1,5 @@
 import { boundsIncluded, constrainBounds } from './utils/bounds';
+import { DEFAULT_INTERPOLATION, VALID_INTERPOLATIONS } from './utils/constants';
 import { normalizeLon } from './utils/math';
 import { parseUrlComponents } from './utils/parse-url';
 
@@ -12,6 +13,7 @@ import type {
 	DataIdentityOptions,
 	DimensionRange,
 	GridData,
+	InterpolationMethod,
 	OmProtocolInstance,
 	OmProtocolSettings,
 	OmUrlState,
@@ -69,6 +71,11 @@ export const getProtocolInstance = (settings: OmProtocolSettings): OmProtocolIns
 export const clearBlockCache = async (): Promise<void> => {
 	await omProtocolInstance?.omFileReader.cache.clear();
 	omProtocolInstance?.stateByKey.clear();
+};
+
+/** Drop all memoized HTTP backends, so the next read re-fetches file metadata. */
+export const clearBackends = (): void => {
+	omProtocolInstance?.omFileReader.clearBackends();
 };
 
 export const getRanges = (gridData: GridData, bounds: Bounds | undefined): DimensionRange[] => {
@@ -178,9 +185,8 @@ export const ensureData = async (
 
 		state.dataPromise = (async () => {
 			try {
-				await omFileReader.setToOmFile(state.omFileUrl);
-
 				const data = await omFileReader.readVariable(
+					state.omFileUrl,
 					state.dataOptions.variable,
 					state.ranges,
 					controller.signal
@@ -218,7 +224,7 @@ export const getValueFromLatLong = async (
 
 	const url = await normalizeUrl(omUrl);
 
-	const { fileAndVariableKey } = parseUrlComponents(url);
+	const { fileAndVariableKey, params } = parseUrlComponents(url);
 	const state = omProtocolInstance.stateByKey.get(fileAndVariableKey);
 	if (!state) {
 		throw new Error(`State not found for key: ${fileAndVariableKey}`);
@@ -232,9 +238,29 @@ export const getValueFromLatLong = async (
 
 	const grid = GridFactory.create(state.dataOptions.domain.grid, state.ranges);
 	const lonNormalized = normalizeLon(lon);
-	const value = grid.getLinearInterpolatedValue(state.data.values, lat, lonNormalized);
+	// Sample with the same interpolation the tiles are rendered with (encoded in
+	// the URL) so the popup value matches the pixel under the cursor.
+	const interpolation = resolveInterpolation(params.get('interpolation'));
+	const value = grid.getInterpolatedValue(state.data.values, lat, lonNormalized, interpolation);
 
-	return { value };
+	// Derived variables (u/v components, speed+direction, wave height+direction)
+	// carry a direction field. Sampled the same way the arrows are (circular on
+	// the degrees), so a popup arrow points exactly like the arrow under it.
+	const directions = state.data.directions;
+	if (!directions) return { value };
+
+	return {
+		value,
+		direction: grid.getLinearInterpolatedDirection(directions, lat, lonNormalized)
+	};
+};
+
+/** Parse the `interpolation` URL param, falling back to the default on absent or invalid values. */
+const resolveInterpolation = (value: string | null): InterpolationMethod => {
+	if (value && VALID_INTERPOLATIONS.includes(value as InterpolationMethod)) {
+		return value as InterpolationMethod;
+	}
+	return DEFAULT_INTERPOLATION;
 };
 
 /**

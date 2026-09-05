@@ -13,7 +13,7 @@ import type {
 	Domain,
 	GridData,
 	OmUrlState,
-	RegularGridData
+	RegularGridFromOrigin
 } from '../types';
 
 // ---------------------------------------------------------------------------
@@ -70,11 +70,12 @@ class FakeReader {
 	calls: ReadCall[] = [];
 
 	// Must match the WeatherMapLayerFileReader interface used by ensureData
-	async setToOmFile(_url?: string): Promise<void> {
-		// intentional no-op
-	}
-
-	readVariable(variable: unknown, ranges: unknown, signal?: AbortSignal): Promise<Data> {
+	readVariable(
+		_url: unknown,
+		variable: unknown,
+		ranges: unknown,
+		signal?: AbortSignal
+	): Promise<Data> {
 		return new Promise<Data>((resolve, reject) => {
 			const call: ReadCall = { variable, ranges, signal, resolve, reject, aborted: false };
 			this.calls.push(call);
@@ -280,7 +281,7 @@ describe('ensureData – data already cached', () => {
 // ---------------------------------------------------------------------------
 
 describe('getRanges', () => {
-	const makeGrid = (overrides: Partial<RegularGridData> = {}): GridData => ({
+	const makeGrid = (overrides: Partial<RegularGridFromOrigin> = {}): GridData => ({
 		type: 'regular',
 		nx: 360,
 		ny: 180,

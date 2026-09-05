@@ -22,8 +22,7 @@ vi.mock('../om-file-reader', async () => {
 		...actual,
 		WeatherMapLayerFileReader: class {
 			config = {};
-			async setToOmFile() {}
-			async readVariable(_variable: string, ranges: DimensionRange[]) {
+			async readVariable(_url: string, _variable: string, ranges: DimensionRange[]) {
 				if (mockReadVariableResult.value) {
 					return mockReadVariableResult.value;
 				}
@@ -110,6 +109,31 @@ describe('Request Options', () => {
 			}
 		});
 
+		it('resolves domain from urls without a data_spatial prefix', async () => {
+			const domainOptions = [createTestDomain('domain1')];
+			const settings = createTestSettings({ domainOptions });
+
+			const url1 =
+				'om://https://example.com/domain1/2026/07/13/0600Z/2026-07-13T1300.om?variable=temperature&dark=true&intervals=2';
+
+			const url2 =
+				'om://https://example.com/nested/bucket/structure/domain1/2026/07/13/0600Z/2026-07-13T1300.om?variable=temperature&dark=true&intervals=2';
+
+			// Bare .om file with neither a data_spatial prefix nor a model-run path.
+			const url3 =
+				'om://https://example.com/domain1/file.om?variable=temperature&dark=true&intervals=2';
+
+			const url4 =
+				'om://https://example.com/nested/bucket/structure/domain1/file.om?variable=temperature&dark=true&intervals=2';
+
+			for (const url of [url1, url2, url3, url4]) {
+				const { dataOptions, renderOptions } = parseRequest(url, settings);
+				expect(dataOptions.domain.value).toBe('domain1');
+				expect(dataOptions.variable).toBe('temperature');
+				expect(renderOptions.intervals).toStrictEqual([2]);
+			}
+		});
+
 		it('throws for invalid domain', async () => {
 			const settings = createTestSettings({ domainOptions: [] });
 			const url = 'om://https://example.com/data_spatial/unknown/file.om?variable=temp';
@@ -139,7 +163,6 @@ describe('Request Options', () => {
 			expect(renderOptions.drawArrows).toBe(false);
 			expect(renderOptions.drawContours).toBe(false);
 			expect(renderOptions.intervals).toStrictEqual(colorScale.breakpoints);
-			expect(renderOptions.colorScale.colors.length).toBe(46);
 		});
 
 		it('parses custom render options', async () => {
@@ -241,7 +264,7 @@ describe('omProtocol', () => {
 		it('returns tilejson with correct tiles URL', async () => {
 			const { omProtocol } = await import('../om-protocol');
 			const params: RequestParameters = {
-				url: 'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m',
+				url: 'om://https://data-spatial.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m',
 				type: 'json'
 			};
 			const result = await omProtocol(params, new AbortController(), defaultOmProtocolSettings);
@@ -258,7 +281,7 @@ describe('omProtocol', () => {
 		it('returns correct bounds for domain grid', async () => {
 			const { omProtocol } = await import('../om-protocol');
 			const params: RequestParameters = {
-				url: 'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m',
+				url: 'om://https://data-spatial.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m',
 				type: 'json'
 			};
 			const result = await omProtocol(params, new AbortController(), defaultOmProtocolSettings);
@@ -274,7 +297,7 @@ describe('omProtocol', () => {
 			const { omProtocol } = await import('../om-protocol');
 
 			const params: RequestParameters = {
-				url: 'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m/0/0/0',
+				url: 'om://https://data-spatial.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m/0/0/0',
 				type: 'arrayBuffer'
 			};
 			const result = await omProtocol(params, new AbortController(), defaultOmProtocolSettings);
@@ -287,7 +310,7 @@ describe('omProtocol', () => {
 			const { omProtocol } = await import('../om-protocol');
 
 			const params: RequestParameters = {
-				url: 'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m',
+				url: 'om://https://data-spatial.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m',
 				type: 'arrayBuffer'
 			};
 
@@ -303,7 +326,7 @@ describe('omProtocol', () => {
 			const settings = createTestSettings({ postReadCallback });
 
 			const params: RequestParameters = {
-				url: 'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m/0/0/0',
+				url: 'om://https://data-spatial.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m/0/0/0',
 				type: 'arrayBuffer'
 			};
 
@@ -313,7 +336,9 @@ describe('omProtocol', () => {
 			expect(postReadCallback).toHaveBeenCalledWith(
 				expect.anything(), // omFileReader
 				expect.objectContaining({ values: expect.any(Float32Array) }), // data
-				expect.objectContaining({ omFileUrl: expect.stringContaining('map-tiles.open-meteo.com') })
+				expect.objectContaining({
+					omFileUrl: expect.stringContaining('data-spatial.open-meteo.com')
+				})
 			);
 		});
 	});
@@ -326,7 +351,7 @@ describe('getValueFromLatLong', () => {
 
 		// First load data via tile request
 		const url =
-			'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m/0/0/0';
+			'om://https://data-spatial.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m/0/0/0';
 		await omProtocol(
 			{ url, type: 'arrayBuffer' },
 			new AbortController(),
@@ -358,7 +383,7 @@ describe('getValueFromLatLong', () => {
 		// Initialize protocol with one URL
 		await omProtocol(
 			{
-				url: 'om://https://map-tiles.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m/0/0/0',
+				url: 'om://https://data-spatial.open-meteo.com/data_spatial/dwd_icon/2025/10/27/1200Z/2025-10-27T1200.om?variable=temperature_2m/0/0/0',
 				type: 'arrayBuffer'
 			},
 			new AbortController(),

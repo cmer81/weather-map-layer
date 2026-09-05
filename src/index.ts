@@ -1,29 +1,59 @@
-export * from './domains';
+export { omProtocol } from './om-protocol';
 
-export * from './om-file-reader';
-export * from './om-protocol';
-export * from './om-protocol-state';
+// Functions
 
-export * from './types';
+export {
+	getValueFromLatLong,
+	clearBlockCache,
+	clearBackends,
+	getRanges,
+	getProtocolInstance
+} from './om-protocol-state';
+export { updateCurrentBounds } from './utils/bounds';
+export { createClippingTester } from './utils/clipping';
+export { domainStep, closestModelRun } from './utils/model-runs';
+// `defaultResolveRequest` is the default implementation behind the public
+// `OmProtocolSettings.resolveRequest` hook: a consumer overriding that hook
+// needs it to delegate the cases it does not handle itself.
+export { getCachedResolvedClipping, defaultResolveRequest } from './utils/parse-request';
+export { getColor, getColorScale } from './utils/styling';
 
-export * from './worker-pool';
+// Classes
 
-export * from './adapters/leaflet';
-export * from './adapters/mapbox';
-export * from './adapters/openlayers';
+export { GridFactory } from './grids/index';
 
-export * from './grids/index';
+// Objects / Constants
 
-export * from './utils/arrows';
-export * from './utils/bounds';
-export * from './utils/clipping';
-export * from './utils/color-scales';
-export * from './utils/constants';
-export * from './utils/contours';
-export * from './utils/grid-points';
-export * from './utils/index';
-export * from './utils/math';
-export * from './utils/parse-request';
-export * from './utils/pbf';
-export * from './utils/styling';
-export * from './utils/variables';
+export { currentBounds } from './utils/bounds';
+export { defaultOmProtocolSettings } from './om-protocol';
+export { domainOptions, domainGroups } from './domains';
+export { variableOptions, levelGroupVariables } from './utils/variables';
+export { VARIABLE_PREFIX, LEVEL_PREFIX, LEVEL_REGEX, LEVEL_UNIT_REGEX } from './utils/constants';
+
+// Adapters
+
+export { addLeafletProtocolSupport } from './adapters/leaflet';
+export { addMapboxProtocolSupport } from './adapters/mapbox';
+export { addOpenLayersProtocolSupport } from './adapters/openlayers';
+
+// Types
+
+export type {
+	BreakpointColorScale,
+	ClippingOptions,
+	ColorScale,
+	Data,
+	Domain,
+	DomainMetaDataJson,
+	GeoJson,
+	GeoJsonFeature,
+	GeoJsonGeometry,
+	GeoJsonPosition,
+	InterpolationMethod,
+	OmProtocolSettings,
+	OmUrlState,
+	RGBA,
+	RenderableColorScale
+} from './types';
+
+export type { WeatherMapLayerFileReader } from './om-file-reader';
